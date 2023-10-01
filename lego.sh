@@ -53,12 +53,12 @@ check_env() {
     if [ "${CMDTYPE}" = 'renew' ]; then
         cmdtype='renew'
         if [ ! -z "${HOOK+x}" ]; then
-            hook="--renew-hook \"${HOOK}\""
+            hook="--renew-hook=\"${HOOK}\""
         fi
     else 
         cmdtype='run'
         if [ ! -z "${HOOK+x}" ]; then
-            hook="--run-hook \"${HOOK}\""
+            hook="--run-hook=\"${HOOK}\""
         fi
     fi
     fi
