@@ -8,22 +8,43 @@ set -e -f -u
 #
 # DOMAIN_NAME       Main domain name we're obtaining a wildcard certificate for.
 # DNS_PROVIDER      DNS provider lego uses to prove that you're in control of
-# 					the domain. The current version supports "godaddy" and "cloudflare".
+# 					the domain. The current version supports the following hosts:
+# 					"cloudflare", "digitalocean", "dreamhost", "duckdns" and "godaddy".
 # EMAIL				Your email address.
 #
 # CloudFlare
+# ---
 # If you're using CloudFlare, you must specify the API token:
 # https://developers.cloudflare.com/api/tokens/create
 #
 # CLOUDFLARE_DNS_API_TOKEN		Your API token.
 #
+#
 # DigitalOcean
+# ---
 # If you're using DigitalOcean, you must specify the API token:
 # https://cloud.digitalocean.com/account/api/tokens
 #
 # DO_AUTH_TOKEN		Your API token.
 #
+#
+# DreamHost
+# ---
+# If you're using DreamHost you must specify the API key:
+# https://panel.dreamhost.com/?tree=billing.api
+#
+# DREAMHOST_API_KEY     Your API key
+#
+#
+# Duck DNS
+# ---
+# If you're using DuckDNS you must specify the API token
+#
+# DUCKDNS_TOKEN         Your API token
+#
+#
 # GoDaddy
+# ---
 # If you're using GoDaddy, you must specify the API secret and key. The API
 # credentials can be created here: https://developer.godaddy.com/keys
 #
@@ -75,7 +96,7 @@ check_env() {
         error_exit "EMAIL must be specified"
     fi
 
-    if [ "${DNS_PROVIDER}" != 'godaddy' ] && [ "${DNS_PROVIDER}" != 'cloudflare' ] && [ "${DNS_PROVIDER}" != 'digitalocean' ] && [ "${DNS_PROVIDER}" != 'duckdns' ] && [ "${DNS_PROVIDER}" != 'namedotcom' ]; then
+    if [ "${DNS_PROVIDER}" != 'godaddy' ] && [ "${DNS_PROVIDER}" != 'cloudflare' ] && [ "${DNS_PROVIDER}" != 'digitalocean' ] && [ "${DNS_PROVIDER}" != "dreamhost" ] && [ "${DNS_PROVIDER}" != 'duckdns' ] && [ "${DNS_PROVIDER}" != 'namedotcom' ]; then
         error_exit "DNS provider ${DNS_PROVIDER} is not supported"
     fi
 
@@ -100,6 +121,12 @@ check_env() {
             error_exit "DO_AUTH_TOKEN must be specified"
         fi
     fi
+
+    if [ "${DNS_PROVIDER}" = 'dreamhost' ]; then
+        if [ -z "${DREAMHOST_API_KEY+x}" ]; then
+            error_exit "DREAMHOST_API_KEY must be specified"
+        fi
+    fi	
 
     if [ "${DNS_PROVIDER}" = 'duckdns' ]; then
         if [ -z "${DUCKDNS_TOKEN+x}" ]; then
@@ -210,12 +237,23 @@ set_cpu() {
 
 download_lego() {
     legoDist="lego.tar.gz"
+    etagFile=".lego.etag"
     arch="_${os}_${cpu}.tar"
     releaseURL=$(curl -s "https://api.github.com/repos/go-acme/lego/releases/latest" | grep "browser_download_url" | grep "${arch}" | grep -o "https://[^\"]*")
+    
+    # If the lego executable doesn't exist then wipe our etags so that it gets re-downloaded
+    if [ ! -f lego ]; then
+        rm -f ${etagFile} 
+    fi
+
     echo "Downloading the latest lego release from ${releaseURL}"
-    curl -s -L "${releaseURL}" --output ${legoDist}
-    tar xvfz ${legoDist}
-    echo "Extracting the latest lego version"
+    curl -L --etag-save ${etagFile} --etag-compare ${etagFile} "${releaseURL}" --output ${legoDist}
+
+    if [ -f ${legoDist} ]; then
+        echo "Extracting the latest lego version"
+        tar xvfz ${legoDist}
+        rm ${legoDist}
+    fi
 }
 
 run_lego_cloudflare() {
@@ -307,6 +345,35 @@ run_lego_digitalocean() {
     fi
 }
 
+run_lego_dreamhost() {
+    if [ "${SERVER:-}" != "" ] &&
+        [ "${EAB_KID:-}" != "" ] &&
+        [ "${EAB_HMAC:-}" != "" ]; then
+        DREAMHOST_API_KEY="${DREAMHOST_API_KEY}" \
+            ./lego \
+            --accept-tos \
+            --server "${SERVER:-}" \
+            --eab --kid "${EAB_KID:-}" --hmac "${EAB_HMAC:-}" \
+            --dns dreamhost \
+            --domains "${wildcardDomainName}" \
+            --domains "${domainName}" \
+            --email "${email}" \
+            --cert.timeout 600 \
+            run
+    else
+        DREAMHOST_API_KEY="${DREAMHOST_API_KEY}" \
+            ./lego \
+            --accept-tos \
+            --dns dreamhost \
+            --domains "${wildcardDomainName}" \
+            --domains "${domainName}" \
+            --email "${email}" \
+            --cert.timeout 600 \
+            run \
+            --preferred-chain="ISRG Root X1"
+    fi
+}
+
 
 run_lego_duckdns() {
     if [ "${SERVER:-}" != "" ] &&
@@ -384,12 +451,16 @@ run_lego() {
         ;;
 
     digitalocean)
-	run_lego_digitalocean
-	;;
+    	run_lego_digitalocean
+    	;;
+
+    dreamhost)
+        run_lego_dreamhost
+        ;;
 
     duckdns)
-	run_lego_duckdns
-	;;
+    	run_lego_duckdns
+    	;;
 
     namedotcom)
 	run_lego_namedotcom
