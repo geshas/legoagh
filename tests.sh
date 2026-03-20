@@ -54,6 +54,8 @@ EOF
 chmod +x tar
 export PATH=".:$PATH"
 
+FAILURES=0
+
 # Function to run lego.sh and check output
 run_test() {
     local name="$1"
@@ -63,7 +65,8 @@ run_test() {
     if env "$@" bash lego.sh > output.txt 2>&1; then
         if [ "${EXPECT_FAIL:-0}" -eq 1 ]; then
             echo "Test $name FAILED (expected failure but passed)"
-            return 1
+            FAILURES=$((FAILURES + 1))
+            return 0
         fi
         echo "Test $name passed"
     else
@@ -73,6 +76,7 @@ run_test() {
         fi
         echo "Test $name FAILED (exit code $?)"
         cat output.txt
+        FAILURES=$((FAILURES + 1))
         return 0 # Continue with other tests
     fi
     # Look for the ARGS line from our mock lego
@@ -131,3 +135,7 @@ EXPECT_FAIL=1 run_test "Invalid domain validation" \
 
 echo "----------------------------------------"
 echo "All tests completed."
+if [ "$FAILURES" -gt 0 ]; then
+    echo "$FAILURES test(s) failed."
+    exit 1
+fi
