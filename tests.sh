@@ -61,8 +61,16 @@ run_test() {
     echo "----------------------------------------"
     echo "Running test: $name"
     if env "$@" bash lego.sh > output.txt 2>&1; then
+        if [ "${EXPECT_FAIL:-0}" -eq 1 ]; then
+            echo "Test $name FAILED (expected failure but passed)"
+            return 1
+        fi
         echo "Test $name passed"
     else
+        if [ "${EXPECT_FAIL:-0}" -eq 1 ]; then
+            echo "Test $name passed (failed as expected)"
+            return 0
+        fi
         echo "Test $name FAILED (exit code $?)"
         cat output.txt
         return 0 # Continue with other tests
@@ -113,6 +121,13 @@ run_test "Run Hook with spaces" \
     DNS_PROVIDER="digitalocean" \
     DO_AUTH_TOKEN="tok123" \
     HOOK="/usr/bin/touch /tmp/done"
+
+# Test 6: Invalid domain validation
+EXPECT_FAIL=1 run_test "Invalid domain validation" \
+    DOMAIN_NAME="example.org; echo 'HACKED'" \
+    EMAIL="user@example.org" \
+    DNS_PROVIDER="cloudflare" \
+    CLOUDFLARE_DNS_API_TOKEN="tok123"
 
 echo "----------------------------------------"
 echo "All tests completed."

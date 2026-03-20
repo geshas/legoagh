@@ -74,23 +74,14 @@ check_env() {
         cmdtype="${CMDTYPE}"
     fi
 
-    local copy_cmd="cp -f ./.lego/certificates/_.${DOMAIN_NAME}.key ./${DOMAIN_NAME}.key && cp -f ./.lego/certificates/_.${DOMAIN_NAME}.crt ./${DOMAIN_NAME}.crt"
-    local full_hook="${copy_cmd}"
-    if [ ! -z "${HOOK+x}" ]; then
-        full_hook="${copy_cmd}; ${HOOK}"
-    fi
-
-    hook_args=()
-    if [ "${cmdtype}" = 'renew' ]; then
-        hook_args=("--renew-hook" "${full_hook}")
-    else
-        hook_args=("--run-hook" "${full_hook}")
-    fi
-
-
-
     if [ -z "${DOMAIN_NAME+x}" ]; then
         error_exit "DOMAIN_NAME must be specified"
+    fi
+
+    # Strict validation for DOMAIN_NAME to prevent shell injection.
+    # Allows alphanumeric, dots, and dashes. Must not start or end with a dot.
+    if [[ ! "${DOMAIN_NAME}" =~ ^[a-zA-Z0-9][-a-zA-Z0-9.]*[a-zA-Z0-9]$ ]] || [[ "${DOMAIN_NAME}" == *".."* ]]; then
+        error_exit "Invalid DOMAIN_NAME: ${DOMAIN_NAME}"
     fi
 
     if [ -z "${DNS_PROVIDER+x}" ]; then
@@ -150,6 +141,19 @@ check_env() {
         fi
     fi
 
+
+    local copy_cmd="cp -f ./.lego/certificates/_.${DOMAIN_NAME}.key ./${DOMAIN_NAME}.key && cp -f ./.lego/certificates/_.${DOMAIN_NAME}.crt ./${DOMAIN_NAME}.crt"
+    local full_hook="${copy_cmd}"
+    if [ ! -z "${HOOK+x}" ]; then
+        full_hook="${copy_cmd} && ${HOOK}"
+    fi
+
+    hook_args=()
+    if [ "${cmdtype}" = 'renew' ]; then
+        hook_args=("--renew-hook" "${full_hook}")
+    else
+        hook_args=("--run-hook" "${full_hook}")
+    fi
 }
 
 # Function set_os sets the os if needed and validates the value.
