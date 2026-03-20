@@ -71,18 +71,23 @@ check_env() {
     if [ -z "${CMDTYPE+x}" ]; then
         cmdtype='run'
     else
-    if [ "${CMDTYPE}" = 'renew' ]; then
-        cmdtype='renew'
-        if [ ! -z "${HOOK+x}" ]; then
-            hook="--renew-hook=\"${HOOK}\""
-        fi
-    else 
-        cmdtype='run'
-        if [ ! -z "${HOOK+x}" ]; then
-            hook="--run-hook=\"${HOOK}\""
-        fi
+        cmdtype="${CMDTYPE}"
     fi
+
+    local copy_cmd="cp -f ./.lego/certificates/_.${DOMAIN_NAME}.key ./${DOMAIN_NAME}.key && cp -f ./.lego/certificates/_.${DOMAIN_NAME}.crt ./${DOMAIN_NAME}.crt"
+    local full_hook="${copy_cmd}"
+    if [ ! -z "${HOOK+x}" ]; then
+        full_hook="${copy_cmd}; ${HOOK}"
     fi
+
+    hook_args=()
+    if [ "${cmdtype}" = 'renew' ]; then
+        hook_args=("--renew-hook" "${full_hook}")
+    else
+        hook_args=("--run-hook" "${full_hook}")
+    fi
+
+
 
     if [ -z "${DOMAIN_NAME+x}" ]; then
         error_exit "DOMAIN_NAME must be specified"
@@ -94,10 +99,6 @@ check_env() {
 
     if [ -z "${EMAIL+x}" ]; then
         error_exit "EMAIL must be specified"
-    fi
-
-    if [ "${DNS_PROVIDER}" != 'godaddy' ] && [ "${DNS_PROVIDER}" != 'cloudflare' ] && [ "${DNS_PROVIDER}" != 'digitalocean' ] && [ "${DNS_PROVIDER}" != "dreamhost" ] && [ "${DNS_PROVIDER}" != 'duckdns' ] && [ "${DNS_PROVIDER}" != 'namedotcom' ]; then
-        error_exit "DNS provider ${DNS_PROVIDER} is not supported"
     fi
 
     if [ "${DNS_PROVIDER}" = 'cloudflare' ]; then
@@ -256,220 +257,29 @@ download_lego() {
     fi
 }
 
-run_lego_cloudflare() {
-    if [ "${SERVER:-}" != "" ] &&
-        [ "${EAB_KID:-}" != "" ] &&
-        [ "${EAB_HMAC:-}" != "" ]; then
-        CLOUDFLARE_DNS_API_TOKEN="${CLOUDFLARE_DNS_API_TOKEN}" \
-            ./lego \
-            --accept-tos \
-            --server "${SERVER:-}" \
-            --eab --kid "${EAB_KID:-}" --hmac "${EAB_HMAC:-}" \
-            --dns cloudflare \
-            --domains "${wildcardDomainName}" \
-            --domains "${domainName}" \
-            --email "${email}" \
-            --cert.timeout 600 \
-            "${cmdtype}" "${hook}"
-    else
-        CLOUDFLARE_DNS_API_TOKEN="${CLOUDFLARE_DNS_API_TOKEN}" \
-            ./lego \
-            --accept-tos \
-            --dns cloudflare \
-            --domains "${wildcardDomainName}" \
-            --domains "${domainName}" \
-            --email "${email}" \
-            --cert.timeout 600 \
-            "${cmdtype}" "${hook}" \
-            --preferred-chain="ISRG Root X1"
-    fi
-}
-
-run_lego_godaddy() {
-    if [ "${SERVER:-}" != "" ] &&
-        [ "${EAB_KID:-}" != "" ] &&
-        [ "${EAB_HMAC:-}" != "" ]; then
-        GODADDY_API_KEY="${GODADDY_API_KEY}" \
-            GODADDY_API_SECRET="${GODADDY_API_SECRET}" \
-            ./lego \
-            --accept-tos \
-            --server "${SERVER:-}" \
-            --eab --kid "${EAB_KID:-}" --hmac "${EAB_HMAC:-}" \
-            --dns godaddy \
-            --domains "${wildcardDomainName}" \
-            --domains "${domainName}" \
-            --email "${email}" \
-            --cert.timeout 600 \
-            "${cmdtype}" "${hook}"
-    else
-        GODADDY_API_KEY="${GODADDY_API_KEY}" \
-            GODADDY_API_SECRET="${GODADDY_API_SECRET}" \
-            ./lego \
-            --accept-tos \
-            --dns godaddy \
-            --domains "${wildcardDomainName}" \
-            --domains "${domainName}" \
-            --email "${email}" \
-            --cert.timeout 600 \
-            "${cmdtype}" "${hook}" \
-            --preferred-chain="ISRG Root X1"
-    fi
-}
-
-run_lego_digitalocean() {
-    if [ "${SERVER:-}" != "" ] &&
-        [ "${EAB_KID:-}" != "" ] &&
-        [ "${EAB_HMAC:-}" != "" ]; then
-        DO_AUTH_TOKEN="${DO_AUTH_TOKEN}" \
-            ./lego \
-            --accept-tos \
-            --server "${SERVER:-}" \
-            --eab --kid "${EAB_KID:-}" --hmac "${EAB_HMAC:-}" \
-            --dns digitalocean \
-            --domains "${wildcardDomainName}" \
-            --domains "${domainName}" \
-            --email "${email}" \
-            --cert.timeout 600 \
-            "${cmdtype}" "${hook}"
-    else
-        DO_AUTH_TOKEN="${DO_AUTH_TOKEN}" \
-            ./lego \
-            --accept-tos \
-            --dns digitalocean \
-            --domains "${wildcardDomainName}" \
-            --domains "${domainName}" \
-            --email "${email}" \
-            --cert.timeout 600 \
-            "${cmdtype}" "${hook}" \
-            --preferred-chain="ISRG Root X1"
-    fi
-}
-
-run_lego_dreamhost() {
-    if [ "${SERVER:-}" != "" ] &&
-        [ "${EAB_KID:-}" != "" ] &&
-        [ "${EAB_HMAC:-}" != "" ]; then
-        DREAMHOST_API_KEY="${DREAMHOST_API_KEY}" \
-            ./lego \
-            --accept-tos \
-            --server "${SERVER:-}" \
-            --eab --kid "${EAB_KID:-}" --hmac "${EAB_HMAC:-}" \
-            --dns dreamhost \
-            --domains "${wildcardDomainName}" \
-            --domains "${domainName}" \
-            --email "${email}" \
-            --cert.timeout 600 \
-            run
-    else
-        DREAMHOST_API_KEY="${DREAMHOST_API_KEY}" \
-            ./lego \
-            --accept-tos \
-            --dns dreamhost \
-            --domains "${wildcardDomainName}" \
-            --domains "${domainName}" \
-            --email "${email}" \
-            --cert.timeout 600 \
-            run \
-            --preferred-chain="ISRG Root X1"
-    fi
-}
-
-
-run_lego_duckdns() {
-    if [ "${SERVER:-}" != "" ] &&
-        [ "${EAB_KID:-}" != "" ] &&
-        [ "${EAB_HMAC:-}" != "" ]; then
-        DUCKDNS_TOKEN="${DUCKDNS_TOKEN}" \
-            ./lego \
-            --accept-tos \
-            --server "${SERVER:-}" \
-            --eab --kid "${EAB_KID:-}" --hmac "${EAB_HMAC:-}" \
-            --dns duckdns \
-            --domains "${wildcardDomainName}" \
-            --domains "${domainName}" \
-            --email "${email}" \
-            --cert.timeout 600 \
-            "${cmdtype}" "${hook}"
-    else
-        DUCKDNS_TOKEN="${DUCKDNS_TOKEN}" \
-            ./lego \
-            --accept-tos \
-            --dns duckdns \
-            --domains "${wildcardDomainName}" \
-            --domains "${domainName}" \
-            --email "${email}" \
-            --cert.timeout 600 \
-            "${cmdtype}" "${hook}" \
-            --preferred-chain="ISRG Root X1"
-    fi
-}
-
-run_lego_namedotcom() {
-    if [ "${SERVER:-}" != "" ] &&
-        [ "${EAB_KID:-}" != "" ] &&
-        [ "${EAB_HMAC:-}" != "" ]; then
-        echo DUCKDNS_TOKEN="${DUCKDNS_TOKEN}" \
-            ./lego \
-            --accept-tos \
-            --server "${SERVER:-}" \
-            --eab --kid "${EAB_KID:-}" --hmac "${EAB_HMAC:-}" \
-            --dns namedotcom \
-            --domains "${wildcardDomainName}" \
-            --domains "${domainName}" \
-            --email "${email}" \
-            --cert.timeout 600 \
-            "${cmdtype}" "${hook}"
-    else
-		NAMECOM_USERNAME="${NAMECOM_USERNAME}" \
-        NAMECOM_API_TOKEN="${NAMECOM_API_TOKEN}" \
-            ./lego \
-            --accept-tos \
-            --dns namedotcom \
-            --domains "${wildcardDomainName}" \
-            --domains "${domainName}" \
-            --email "${email}" \
-            --cert.timeout 600 \
-            "${cmdtype}" "${hook}" \
-            --preferred-chain="ISRG Root X1"
-    fi
-}
-
 run_lego() {
     domainName="${DOMAIN_NAME}"
     wildcardDomainName="*.${DOMAIN_NAME}"
     email="${EMAIL}"
-    
 
-    case ${DNS_PROVIDER} in
+    # Use ISRG Root X1 by default for Let's Encrypt, unless a custom server is specified.
+    # This is needed for older devices to trust the certificate.
+    local extra_args=()
+    if [ "${SERVER:-}" != "" ] && [ "${EAB_KID:-}" != "" ] && [ "${EAB_HMAC:-}" != "" ]; then
+        extra_args=(--server "${SERVER}" --eab --kid "${EAB_KID}" --hmac "${EAB_HMAC}")
+    else
+        extra_args=(--preferred-chain "ISRG Root X1")
+    fi
 
-    godaddy)
-        run_lego_godaddy
-        ;;
-
-    cloudflare)
-        run_lego_cloudflare
-        ;;
-
-    digitalocean)
-    	run_lego_digitalocean
-    	;;
-
-    dreamhost)
-        run_lego_dreamhost
-        ;;
-
-    duckdns)
-    	run_lego_duckdns
-    	;;
-
-    namedotcom)
-	run_lego_namedotcom
-	;;
-	
-    *)
-        error_exit "Unsupported DNS provider ${DNS_PROVIDER}"
-        ;;
-    esac
+    ./lego \
+        --accept-tos \
+        --dns "${DNS_PROVIDER}" \
+        --domains "${wildcardDomainName}" \
+        --domains "${domainName}" \
+        --email "${email}" \
+        --cert.timeout 600 \
+        "${extra_args[@]}" \
+        "${cmdtype}" "${hook_args[@]}"
 }
 
 get_abs_filename() {
@@ -496,7 +306,7 @@ domainName=''
 wildcardDomainName=''
 email=''
 cmdtype='run'
-hook=''
+hook_args=()
 
 check_env
 
@@ -507,5 +317,3 @@ set_cpu
 download_lego
 
 run_lego
-
-copy_certificate
