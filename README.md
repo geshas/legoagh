@@ -4,6 +4,9 @@ A simple script for automating using lego with [AdGuard Home](https://github.com
 It downloads the latest available release of lego, runs it and obtains
 a wildcard certificate for the specified domain.
 
+The script supports all DNS providers that [lego](https://go-acme.github.io/lego/dns/) supports.
+Just pass the provider name in `DNS_PROVIDER` and set the required environment variables.
+
 Prepare:
 
 ```bash
@@ -62,7 +65,7 @@ DOMAIN_NAME="example.duckdns.org" \
     ./lego.sh
 ```
 
-If you're using Name.com, you need to [copy the username and TOCKEN from namedotcom](https://www.name.com/account/settings/api).
+If you're using Name.com, you need to [copy the username and TOKEN from namedotcom](https://www.name.com/account/settings/api).
 
 Then run the script:
 
