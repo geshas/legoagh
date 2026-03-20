@@ -278,7 +278,7 @@ run_lego() {
     if [ "${SERVER:-}" != "" ] && [ "${EAB_KID:-}" != "" ] && [ "${EAB_HMAC:-}" != "" ]; then
         global_args=(--server "${SERVER}" --eab --kid "${EAB_KID}" --hmac "${EAB_HMAC}")
     else
-        cmd_args=("--preferred-chain=ISRG Root X1")
+        cmd_args=(--preferred-chain "ISRG Root X1")
     fi
 
     ./lego \
