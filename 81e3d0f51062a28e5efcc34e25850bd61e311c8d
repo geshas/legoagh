@@ -1,0 +1,25 @@
+lego.sh
+  3f4194e3eea9a305 14,285,293-299
+tests.sh
+  3f4194e3eea9a305 136-155
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.15",
+  "base_commit_sha": "81e3d0f51062a28e5efcc34e25850bd61e311c8d",
+  "prompts": {
+    "3f4194e3eea9a305": {
+      "agent_id": {
+        "tool": "gemini",
+        "id": "b8ae0c7d-9032-4b26-8906-b4c6d834c9fe",
+        "model": "gemini-3.1-pro-preview-customtools"
+      },
+      "human_author": "geshas <evgeny.shtein@gmail.com>",
+      "messages": [],
+      "total_additions": 29,
+      "total_deletions": 2,
+      "accepted_lines": 29,
+      "overriden_lines": 0
+    }
+  }
+}
