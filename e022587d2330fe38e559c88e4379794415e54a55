@@ -1,0 +1,23 @@
+lego.sh
+  3f4194e3eea9a305 276-277,279,281,291-292
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.15",
+  "base_commit_sha": "e022587d2330fe38e559c88e4379794415e54a55",
+  "prompts": {
+    "3f4194e3eea9a305": {
+      "agent_id": {
+        "tool": "gemini",
+        "id": "b8ae0c7d-9032-4b26-8906-b4c6d834c9fe",
+        "model": "gemini-3.1-pro-preview-customtools"
+      },
+      "human_author": "geshas <evgeny.shtein@gmail.com>",
+      "messages": [],
+      "total_additions": 6,
+      "total_deletions": 6,
+      "accepted_lines": 6,
+      "overriden_lines": 0
+    }
+  }
+}
