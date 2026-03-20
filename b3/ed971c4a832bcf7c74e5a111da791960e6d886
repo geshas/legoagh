@@ -1,0 +1,25 @@
+lego.sh
+  ccded156c6f68877 81-86,96-98,100-101,106-110,115,122,129,136-137,139-140
+tests.sh
+  ccded156c6f68877 20,64-67,70-73,125-131
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.15",
+  "base_commit_sha": "b3ed971c4a832bcf7c74e5a111da791960e6d886",
+  "prompts": {
+    "ccded156c6f68877": {
+      "agent_id": {
+        "tool": "gemini",
+        "id": "d8eec43f-0a10-4140-b6a7-6c0a14b9b63a",
+        "model": "gemini-3-flash-preview"
+      },
+      "human_author": "geshas <evgeny.shtein@gmail.com>",
+      "messages": [],
+      "total_additions": 22,
+      "total_deletions": 1,
+      "accepted_lines": 39,
+      "overriden_lines": 0
+    }
+  }
+}
