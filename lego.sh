@@ -11,6 +11,7 @@ set -e -f -u
 # 					the domain. The current version supports the following hosts:
 # 					"cloudflare", "digitalocean", "dreamhost", "duckdns" and "godaddy".
 # EMAIL				Your email address.
+# LEGO_LOG_FILE     Optional. Path to a file where the ./lego command output will be appended.
 #
 # CloudFlare
 # ---
@@ -273,22 +274,29 @@ run_lego() {
 
     # Use ISRG Root X1 by default for Let's Encrypt, unless a custom server is specified.
     # This is needed for older devices to trust the certificate.
-    local extra_args=()
+    local global_options=()
+    local command_options=()
     if [ "${SERVER:-}" != "" ] && [ "${EAB_KID:-}" != "" ] && [ "${EAB_HMAC:-}" != "" ]; then
-        extra_args=(--server "${SERVER}" --eab --kid "${EAB_KID}" --hmac "${EAB_HMAC}")
+        global_options=(--server "${SERVER}" --eab --kid "${EAB_KID}" --hmac "${EAB_HMAC}")
     else
-        extra_args=(--preferred-chain "ISRG Root X1")
+        command_options=('--preferred-chain="ISRG Root X1"')
     fi
 
-    ./lego \
+    local lego_cmd=(./lego \
         --accept-tos \
         --dns "${DNS_PROVIDER}" \
         --domains "${wildcardDomainName}" \
         --domains "${domainName}" \
         --email "${email}" \
         --cert.timeout 600 \
-        "${extra_args[@]}" \
-        "${cmdtype}" "${hook_args[@]}"
+        "${global_options[@]}" \
+        "${cmdtype}" "${command_options[@]}" "${hook_args[@]}")
+
+    if [ -n "${LEGO_LOG_FILE:-}" ]; then
+        "${lego_cmd[@]}" >> "${LEGO_LOG_FILE}" 2>&1
+    else
+        "${lego_cmd[@]}"
+    fi
 }
 
 get_abs_filename() {
