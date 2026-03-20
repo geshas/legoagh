@@ -102,46 +102,51 @@ check_env() {
     fi
 
     if [ "${DNS_PROVIDER}" = 'cloudflare' ]; then
-        if [ -z "${CLOUDFLARE_DNS_API_TOKEN+x}" ]; then
-            error_exit "CLOUDFLARE_DNS_API_TOKEN must be specified"
+        # Lego uses CF_DNS_API_TOKEN, but this script historically used CLOUDFLARE_DNS_API_TOKEN
+        if [ ! -z "${CLOUDFLARE_DNS_API_TOKEN+x}" ]; then
+            export CF_DNS_API_TOKEN="${CLOUDFLARE_DNS_API_TOKEN}"
+        fi
+        if [ -z "${CF_DNS_API_TOKEN+x}" ] && [ -z "${CF_API_EMAIL+x}" ]; then
+            error_exit "Cloudflare requires CF_DNS_API_TOKEN (or legacy CLOUDFLARE_DNS_API_TOKEN) or CF_API_EMAIL and CF_API_KEY"
         fi
     fi
 
     if [ "${DNS_PROVIDER}" = 'godaddy' ]; then
-        if [ -z "${GODADDY_API_KEY+x}" ]; then
-            error_exit "GODADDY_API_KEY must be specified"
-        fi
-
-        if [ -z "${GODADDY_API_SECRET+x}" ]; then
-            error_exit "GODADDY_API_SECRET must be specified"
+        if [ ! -z "${GODADDY_API_KEY+x}" ]; then export GODADDY_API_KEY; fi
+        if [ ! -z "${GODADDY_API_SECRET+x}" ]; then export GODADDY_API_SECRET; fi
+        
+        if [ -z "${GODADDY_API_KEY+x}" ] || [ -z "${GODADDY_API_SECRET+x}" ]; then
+            error_exit "GODADDY_API_KEY and GODADDY_API_SECRET must be specified"
         fi
     fi
 
     if [ "${DNS_PROVIDER}" = 'digitalocean' ]; then
+        if [ ! -z "${DO_AUTH_TOKEN+x}" ]; then export DO_AUTH_TOKEN; fi
         if [ -z "${DO_AUTH_TOKEN+x}" ]; then
             error_exit "DO_AUTH_TOKEN must be specified"
         fi
     fi
 
     if [ "${DNS_PROVIDER}" = 'dreamhost' ]; then
+        if [ ! -z "${DREAMHOST_API_KEY+x}" ]; then export DREAMHOST_API_KEY; fi
         if [ -z "${DREAMHOST_API_KEY+x}" ]; then
             error_exit "DREAMHOST_API_KEY must be specified"
         fi
     fi	
 
     if [ "${DNS_PROVIDER}" = 'duckdns' ]; then
+        if [ ! -z "${DUCKDNS_TOKEN+x}" ]; then export DUCKDNS_TOKEN; fi
         if [ -z "${DUCKDNS_TOKEN+x}" ]; then
             error_exit "DUCKDNS_TOKEN must be specified"
         fi
     fi	
 	
     if [ "${DNS_PROVIDER}" = 'namedotcom' ]; then
-        if [ -z "${NAMECOM_USERNAME+x}" ]; then
-            error_exit "NAMECOM_USERNAME must be specified"
-        fi
+        if [ ! -z "${NAMECOM_USERNAME+x}" ]; then export NAMECOM_USERNAME; fi
+        if [ ! -z "${NAMECOM_API_TOKEN+x}" ]; then export NAMECOM_API_TOKEN; fi
 
-        if [ -z "${NAMECOM_API_TOKEN+x}" ]; then
-            error_exit "NAMECOM_API_TOKEN must be specified"
+        if [ -z "${NAMECOM_USERNAME+x}" ] || [ -z "${NAMECOM_API_TOKEN+x}" ]; then
+            error_exit "NAMECOM_USERNAME and NAMECOM_API_TOKEN must be specified"
         fi
     fi
 

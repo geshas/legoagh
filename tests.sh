@@ -17,6 +17,7 @@ cat <<EOF > lego
 #!/bin/bash
 # Just echo the arguments for testing
 echo "ARGS: \$*"
+
 mkdir -p ./.lego/certificates/
 # Fixed: The script expects _.domain.name.crt
 touch "./.lego/certificates/_.\${DOMAIN_NAME}.crt"
