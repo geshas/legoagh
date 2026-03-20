@@ -11,6 +11,7 @@ set -e -f -u
 # 					the domain. The current version supports the following hosts:
 # 					"cloudflare", "digitalocean", "dreamhost", "duckdns" and "godaddy".
 # EMAIL				Your email address.
+# LEGO_LOG_FILE     Optional. Path to a file where the ./lego command output will be appended.
 #
 # CloudFlare
 # ---
@@ -281,7 +282,7 @@ run_lego() {
         command_options=('--preferred-chain="ISRG Root X1"')
     fi
 
-    ./lego \
+    local lego_cmd=(./lego \
         --accept-tos \
         --dns "${DNS_PROVIDER}" \
         --domains "${wildcardDomainName}" \
@@ -289,7 +290,13 @@ run_lego() {
         --email "${email}" \
         --cert.timeout 600 \
         "${global_options[@]}" \
-        "${cmdtype}" "${command_options[@]}" "${hook_args[@]}"
+        "${cmdtype}" "${command_options[@]}" "${hook_args[@]}")
+
+    if [ -n "${LEGO_LOG_FILE:-}" ]; then
+        "${lego_cmd[@]}" >> "${LEGO_LOG_FILE}" 2>&1
+    else
+        "${lego_cmd[@]}"
+    fi
 }
 
 get_abs_filename() {

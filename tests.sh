@@ -133,6 +133,26 @@ EXPECT_FAIL=1 run_test "Invalid domain validation" \
     DNS_PROVIDER="cloudflare" \
     CLOUDFLARE_DNS_API_TOKEN="tok123"
 
+# Test 7: Log file appending
+export LEGO_LOG_FILE="test_lego.log"
+rm -f "$LEGO_LOG_FILE"
+run_test "Log file appending" \
+    DOMAIN_NAME="example.org" \
+    EMAIL="user@example.org" \
+    DNS_PROVIDER="cloudflare" \
+    CLOUDFLARE_DNS_API_TOKEN="tok123"
+
+if [ -f "$LEGO_LOG_FILE" ]; then
+    grep -q "ARGS:" "$LEGO_LOG_FILE" || {
+        echo "ARGS not found in log file"
+        FAILURES=$((FAILURES + 1))
+    }
+else
+    echo "$LEGO_LOG_FILE not created"
+    FAILURES=$((FAILURES + 1))
+fi
+unset LEGO_LOG_FILE
+
 echo "----------------------------------------"
 echo "All tests completed."
 if [ "$FAILURES" -gt 0 ]; then
