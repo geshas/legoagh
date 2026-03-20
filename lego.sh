@@ -273,12 +273,12 @@ run_lego() {
 
     # Use ISRG Root X1 by default for Let's Encrypt, unless a custom server is specified.
     # This is needed for older devices to trust the certificate.
-    local global_args=()
-    local cmd_args=()
+    local global_options=()
+    local command_options=()
     if [ "${SERVER:-}" != "" ] && [ "${EAB_KID:-}" != "" ] && [ "${EAB_HMAC:-}" != "" ]; then
-        global_args=(--server "${SERVER}" --eab --kid "${EAB_KID}" --hmac "${EAB_HMAC}")
+        global_options=(--server "${SERVER}" --eab --kid "${EAB_KID}" --hmac "${EAB_HMAC}")
     else
-        cmd_args=('--preferred-chain="ISRG Root X1"')
+        command_options=('--preferred-chain="ISRG Root X1"')
     fi
 
     ./lego \
@@ -288,8 +288,8 @@ run_lego() {
         --domains "${domainName}" \
         --email "${email}" \
         --cert.timeout 600 \
-        "${global_args[@]}" \
-        "${cmdtype}" "${cmd_args[@]}" "${hook_args[@]}"
+        "${global_options[@]}" \
+        "${cmdtype}" "${command_options[@]}" "${hook_args[@]}"
 }
 
 get_abs_filename() {
