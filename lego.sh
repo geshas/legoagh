@@ -249,8 +249,17 @@ set_cpu() {
 download_lego() {
     legoDist="lego.tar.gz"
     etagFile=".lego.etag"
-    arch="_${os}_${cpu}.tar"
-    releaseURL=$(curl -s "https://api.github.com/repos/go-acme/lego/releases/latest" | grep "browser_download_url" | grep "${arch}" | grep -o "https://[^\"]*")
+    arch="_${os}_${cpu}.tar.gz"
+
+    if command -v jq >/dev/null 2>&1; then
+        releaseURL=$(curl -s "https://api.github.com/repos/go-acme/lego/releases/latest" | jq -r ".assets[]?.browser_download_url | select(test(\"${arch}$\"))" | head -n 1)
+    else
+        releaseURL=$(curl -s "https://api.github.com/repos/go-acme/lego/releases/latest" | grep "browser_download_url" | grep -E "${arch}(\"|$)" | grep -v "\\.sbom\\.json" | grep -o "https://[^\"]*" | head -n 1)
+    fi
+
+    if [ -z "${releaseURL}" ]; then
+        error_exit "Unable to determine lego download URL for ${os}/${cpu}"
+    fi
     
     # If the lego executable doesn't exist then wipe our etags so that it gets re-downloaded
     if [ ! -f lego ]; then
