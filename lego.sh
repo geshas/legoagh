@@ -156,7 +156,7 @@ check_env() {
     } > "${hook_script}"
 
     chmod 700 "${hook_script}"
-    trap 'rm -f "${hook_script}"' EXIT
+    trap 'rm -f "./.lego_hook.sh"' EXIT
 
     hook_args=()
     if [ "${cmdtype}" = 'renew' ]; then
