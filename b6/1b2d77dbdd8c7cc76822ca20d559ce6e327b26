@@ -1,0 +1,20 @@
+lego.sh
+  s_3801a03bf071b1::t_ff3605706607b2 253-258
+  s_3801a03bf071b1::t_42ae009ee4dd48 252,259-262
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.4",
+  "base_commit_sha": "b61b2d77dbdd8c7cc76822ca20d559ce6e327b26",
+  "prompts": {},
+  "sessions": {
+    "s_3801a03bf071b1": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_1ea131f8affeKPSb140hlPyIt2",
+        "model": "gpt-5.3-codex"
+      },
+      "human_author": "geshas <evgeny.shtein@gmail.com>"
+    }
+  }
+}
