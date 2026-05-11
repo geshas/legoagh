@@ -143,17 +143,26 @@ check_env() {
     fi
 
 
-    local copy_cmd="cp -f ./.lego/certificates/_.${DOMAIN_NAME}.key ./${DOMAIN_NAME}.key && cp -f ./.lego/certificates/_.${DOMAIN_NAME}.crt ./${DOMAIN_NAME}.crt"
-    local full_hook="${copy_cmd}"
-    if [ ! -z "${HOOK+x}" ]; then
-        full_hook="${copy_cmd} && ${HOOK}"
-    fi
+    local hook_script="./.lego_hook.sh"
+
+    {
+        printf '%s\n' '#!/bin/sh'
+        printf '%s\n' 'set -e'
+        printf 'cp -f %s %s\n' "./.lego/certificates/_.${DOMAIN_NAME}.key" "./${DOMAIN_NAME}.key"
+        printf 'cp -f %s %s\n' "./.lego/certificates/_.${DOMAIN_NAME}.crt" "./${DOMAIN_NAME}.crt"
+        if [ ! -z "${HOOK+x}" ]; then
+            printf '%s\n' "${HOOK}"
+        fi
+    } > "${hook_script}"
+
+    chmod 700 "${hook_script}"
+    trap 'rm -f "${hook_script}"' EXIT
 
     hook_args=()
     if [ "${cmdtype}" = 'renew' ]; then
-        hook_args=("--renew-hook" "${full_hook}")
+        hook_args=("--renew-hook" "${hook_script}")
     else
-        hook_args=("--run-hook" "${full_hook}")
+        hook_args=("--run-hook" "${hook_script}")
     fi
 }
 
