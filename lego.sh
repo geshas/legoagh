@@ -11,6 +11,11 @@ set -e -f -u
 # 					the domain. The current version supports the following hosts:
 # 					"cloudflare", "digitalocean", "dreamhost", "duckdns" and "godaddy".
 # EMAIL				Your email address.
+# CMDTYPE           Optional. Set to "renew" to force renewal mode behavior.
+#                   With lego v5 this adds --ari-disable to avoid ARI account
+#                   mismatch errors when renewing certificates issued by
+#                   another/lost account key.
+# ARI_DISABLE       Optional. Set to "1" or "true" to disable ARI.
 # LEGO_LOG_FILE     Optional. Path to a file where the ./lego command output will be appended.
 #
 # CloudFlare
@@ -98,8 +103,20 @@ check_env() {
         if [ ! -z "${CLOUDFLARE_DNS_API_TOKEN+x}" ]; then
             export CF_DNS_API_TOKEN="${CLOUDFLARE_DNS_API_TOKEN}"
         fi
-        if [ -z "${CF_DNS_API_TOKEN+x}" ] && [ -z "${CF_API_EMAIL+x}" ]; then
-            error_exit "Cloudflare requires CF_DNS_API_TOKEN (or legacy CLOUDFLARE_DNS_API_TOKEN) or CF_API_EMAIL and CF_API_KEY"
+        if [ -z "${CF_DNS_API_TOKEN+x}" ] && [ -z "${CLOUDFLARE_DNS_API_TOKEN+x}" ]; then
+            local has_cf_email='0'
+            local has_cf_key='0'
+
+            if [ ! -z "${CF_API_EMAIL+x}" ] || [ ! -z "${CLOUDFLARE_EMAIL+x}" ]; then
+                has_cf_email='1'
+            fi
+            if [ ! -z "${CF_API_KEY+x}" ] || [ ! -z "${CLOUDFLARE_API_KEY+x}" ]; then
+                has_cf_key='1'
+            fi
+
+            if [ "${has_cf_email}" != '1' ] || [ "${has_cf_key}" != '1' ]; then
+                error_exit "Cloudflare requires CF_DNS_API_TOKEN (or CLOUDFLARE_DNS_API_TOKEN) or email+key (CF_API_EMAIL/CLOUDFLARE_EMAIL and CF_API_KEY/CLOUDFLARE_API_KEY)"
+            fi
         fi
     fi
 
@@ -159,11 +176,7 @@ check_env() {
     trap 'rm -f "./.lego_hook.sh"' EXIT
 
     hook_args=()
-    if [ "${cmdtype}" = 'renew' ]; then
-        hook_args=("--renew-hook" "${hook_script}")
-    else
-        hook_args=("--run-hook" "${hook_script}")
-    fi
+    hook_args=("--deploy-hook" "${hook_script}")
 }
 
 # Function set_os sets the os if needed and validates the value.
@@ -290,25 +303,37 @@ run_lego() {
     wildcardDomainName="*.${DOMAIN_NAME}"
     email="${EMAIL}"
 
-    # Use ISRG Root X1 by default for Let's Encrypt, unless a custom server is specified.
-    # This is needed for older devices to trust the certificate.
-    local global_options=()
+    # lego v5 uses command-first syntax: `lego run [options]`.
+    # `run` handles both initial obtain and renewal flows.
     local command_options=()
-    if [ "${SERVER:-}" != "" ] && [ "${EAB_KID:-}" != "" ] && [ "${EAB_HMAC:-}" != "" ]; then
-        global_options=(--server "${SERVER}" --eab --kid "${EAB_KID}" --hmac "${EAB_HMAC}")
+
+    if [ "${SERVER:-}" != "" ]; then
+        command_options+=(--server "${SERVER}")
     else
-        command_options=('--preferred-chain="ISRG Root X1"')
+        # Use ISRG Root X1 by default for Let's Encrypt unless custom CA is set.
+        command_options+=(--preferred-chain "ISRG Root X1")
     fi
 
-    local lego_cmd=(./lego \
+    if [ "${EAB_KID:-}" != "" ] || [ "${EAB_HMAC:-}" != "" ]; then
+        if [ "${EAB_KID:-}" = "" ] || [ "${EAB_HMAC:-}" = "" ]; then
+            error_exit "EAB_KID and EAB_HMAC must both be specified when using EAB"
+        fi
+        command_options+=(--eab --eab.kid "${EAB_KID}" --eab.hmac "${EAB_HMAC}")
+    fi
+
+    if [ "${cmdtype}" = 'renew' ] || [ "${ARI_DISABLE:-}" = '1' ] || [ "${ARI_DISABLE:-}" = 'true' ]; then
+        command_options+=(--ari-disable)
+    fi
+
+    local lego_cmd=(./lego run \
         --accept-tos \
         --dns "${DNS_PROVIDER}" \
         --domains "${wildcardDomainName}" \
         --domains "${domainName}" \
         --email "${email}" \
         --cert.timeout 600 \
-        "${global_options[@]}" \
-        "${cmdtype}" "${command_options[@]}" "${hook_args[@]}")
+        "${command_options[@]}" \
+        "${hook_args[@]}")
 
     if [ -n "${LEGO_LOG_FILE:-}" ]; then
         "${lego_cmd[@]}" >> "${LEGO_LOG_FILE}" 2>&1

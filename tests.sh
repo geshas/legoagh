@@ -24,10 +24,10 @@ touch "./.lego/certificates/_.\${DOMAIN_NAME}.crt"
 touch "./.lego/certificates/_.\${DOMAIN_NAME}.key"
 
 # Find and execute the hook if it's there
-# We're looking for --run-hook <command> or --renew-hook <command>
+# We're looking for --deploy-hook <command>
 last_arg=""
 for arg in "\$@"; do
-    if [[ "\$last_arg" == "--run-hook" || "\$last_arg" == "--renew-hook" ]]; then
+    if [[ "\$last_arg" == "--deploy-hook" ]]; then
         echo "Executing hook: \$arg"
         eval "\$arg"
     fi
