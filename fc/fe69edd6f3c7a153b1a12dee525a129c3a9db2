@@ -1,0 +1,24 @@
+lego.sh
+  s_ef388e4c5600a0::t_0bfccfdb8cc23b 324-325
+  s_ef388e4c5600a0::t_4bbfa25d450860 14-18
+  s_ef388e4c5600a0::t_19fb19168bc864 179,306-307,309-311,313-321,328,335-336
+  s_ef388e4c5600a0::t_dc02af718d0864 106-119
+tests.sh
+  s_ef388e4c5600a0::t_978c3c092f48f6 27,30
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.11",
+  "base_commit_sha": "fcfe69edd6f3c7a153b1a12dee525a129c3a9db2",
+  "prompts": {},
+  "sessions": {
+    "s_ef388e4c5600a0": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_1b65ec5a2ffenvKDT2wHuu3vZd",
+        "model": "gpt-5.3-codex"
+      },
+      "human_author": "geshas <evgeny.shtein@gmail.com>"
+    }
+  }
+}
