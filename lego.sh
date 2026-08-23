@@ -332,6 +332,7 @@ run_lego() {
         --domains "${domainName}" \
         --email "${email}" \
         --cert.timeout 600 \
+		--pem \
         "${command_options[@]}" \
         "${hook_args[@]}")
 
